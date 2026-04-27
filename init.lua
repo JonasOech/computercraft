@@ -1,4 +1,4 @@
--- Replace with your actual OpenRouter API key
+-- IMPORTANT: You MUST replace this with a real API key from openrouter.ai
 local API_KEY = "sk-or-v1-YOUR_API_KEY_HERE"
 local API_URL = "https://openrouter.ai/api/v1/chat/completions"
 local MODEL = "meta-llama/llama-3-8b-instruct:free"
@@ -23,7 +23,6 @@ while true do
     end
 
     if input ~= "" then
-        -- Standard OpenAI chat completion payload
         local payload = {
             model = MODEL,
             messages = {
@@ -34,13 +33,15 @@ while true do
         local postData = textutils.serializeJSON(payload)
         local headers = {
             ["Content-Type"] = "application/json",
-            ["Authorization"] = "Bearer " .. API_KEY
+            ["Authorization"] = "Bearer " .. API_KEY,
+            ["HTTP-Referer"] = "http://localhost", -- OpenRouter requires this
+            ["X-Title"] = "ComputerCraftChat"      -- OpenRouter optional but recommended
         }
 
         write("AI is thinking... ")
-        local response, err = http.post(API_URL, postData, headers)
+        -- Capture the errorResponse as the 3rd variable
+        local response, err, errorResponse = http.post(API_URL, postData, headers)
 
-        -- clear the "thinking..." line
         local x, y = term.getCursorPos()
         term.setCursorPos(1, y)
         term.clearLine() 
@@ -54,11 +55,17 @@ while true do
                 print("AI: " .. result.choices[1].message.content)
             else
                 print("Error: Failed to parse API response.")
-                print("Raw: " .. tostring(responseText))
             end
         else
             print("HTTP Request failed: " .. tostring(err))
+            -- If the API sends back a specific error reason (like Invalid Key), print it:
+            if errorResponse then
+                print("Server details: " .. tostring(errorResponse.readAll()))
+                errorResponse.close()
+            else
+                print("Make sure you replaced the API_KEY with a real key from OpenRouter!")
+            end
         end
-        print() -- Add an empty line for readability
+        print()
     end
 end
