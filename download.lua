@@ -22,6 +22,7 @@ end
 local currentSha = readCurrentSha()
 local LINK = "https://raw.githubusercontent.com/JonasOech/computercraft/refs/heads/main/init.lua"
 local API_LINK = "https://api.github.com/repos/JonasOech/computercraft/commits/main"
+local filepath =  "/disk/init.lua"
 
 while true do
     -- Fetch the latest commit info from GitHub API
@@ -42,13 +43,12 @@ while true do
                 shell.execute("wget", LINK .. "?t=" .. os.epoch("utc"), "/cache/init.lua")
                 
                 if fs.exists("/cache/init.lua") then
-                    if fs.exists("/init.lua") then fs.delete("/init.lua") end
-                    fs.move("/cache/init.lua", "/init.lua")
+                    if fs.exists(filepath) then fs.delete(filepath) end
+                    fs.move("/cache/init.lua", filepath)
                     
                     saveCurrentSha(latestSha)
                     currentSha = latestSha
                     print("Updated successfully.")
-                    shell.run("/init.lua")
                 else
                     print("Update check failed: could not download file")
                 end
