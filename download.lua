@@ -40,7 +40,10 @@ while true do
                 print("Running update...")
                 
                 if fs.exists("/cache/init.lua") then fs.delete("/cache/init.lua") end
-                shell.execute("wget", LINK .. "?t=" .. os.epoch("utc"), "/cache/init.lua")
+                
+                -- Download using the exact commit SHA to bypass branch caching
+                local exactUrl = "https://raw.githubusercontent.com/JonasOech/computercraft/" .. latestSha .. "/init.lua"
+                shell.execute("wget", exactUrl, "/cache/init.lua")
                 
                 if fs.exists("/cache/init.lua") then
                     if fs.exists(filepath) then fs.delete(filepath) end
