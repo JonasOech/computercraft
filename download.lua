@@ -15,19 +15,19 @@ if fs.exists("/cache/init.lua") then fs.delete("/cache/init.lua") end
 local currentVersion = readVersion("/init.lua") or "0.0.0"
 local LINK =  "https://raw.githubusercontent.com/JonasOech/computercraft/refs/heads/main/init.lua"
 
-local function download(url, path)
-    local res = http.get(url)
-    if not res then return false end
-    local file = fs.open(path, "w")
-    file.write(res.readAll())
-    file.close()
-    res.close()
-    return true
-end
+-- local function download(url, path)
+--     local res = http.get(url)
+--     if not res then return false end
+--     local file = fs.open(path, "w")
+--     file.write(res.readAll())
+--     file.close()
+--     res.close()
+--     return true
+-- end
 
 while true do
     if fs.exists("/cache/init.lua") then fs.delete("/cache/init.lua") end
-    download(LINK, "/cache/init.lua")
+    shell.execute("wget", LINK, "/cache/init.lua")
 
     local version = readVersion("/cache/init.lua")
 
