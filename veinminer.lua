@@ -127,11 +127,12 @@ end
 
 local function refueler(num)
     for i = 1, 16 do
-        local item = turtle.getItemDetail(i, true)
-        if item and item.tags and item.tags["minecraft:fuel"] then
+        if turtle.getItemCount(i) > 0 then
             turtle.select(i)
-            turtle.refuel(num)
-            return true
+            if turtle.refuel(0) then
+                turtle.refuel(num)
+                return true
+            end
         end
     end
     return false
