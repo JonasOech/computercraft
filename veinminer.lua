@@ -21,7 +21,7 @@ for dx = -1, 1 do
     for dy = -1, 1 do
         for dz = -1, 1 do
             local sum = math.abs(dx) + math.abs(dy) + math.abs(dz)
-            if sum == 2 or sum == 3 then
+            if sum == 2 or (sum == 3 and not skipCorners) then
                 table.insert(DIAGONALS, vector.new(dx, dy, dz))
             end
         end
@@ -64,7 +64,7 @@ local function tryAdd(p)
     if seen[key] then return end
     seen[key] = true
     table.insert(toMineStack, p)
-    print("Found block at " .. tostring(p) .. " Fuel level: " .. turtle.getFuelLevel())
+    print("Found block at " .. tostring(p) ..)
     -- Probe diagonals: turtle.inspect can't see them, so we dig through to a vantage and rescan.
     for _, d in ipairs(DIAGONALS) do
         queueProbe(p + d)
@@ -141,6 +141,7 @@ local function moveTo(target)
         end
     end
 
+    print("Fuel: " .. turtle.getFuelLevel() .. ", moving to " .. tostring(target) .. "ToMine:" .. #toMineStack)
     while target.y > position.y do moveUp() end
     while target.y < position.y do moveDown() end
 
@@ -198,5 +199,10 @@ local function mineVeinBestFirstSearch(block)
 end
 
 local args = {...}
-local ore = args[1] or "minecraft:coal_ore"
+if #args ~= 2 then
+    print("Usage: veinminer <blockname> <skipcorners?>")
+    return
+end
+local ore = args[1] or "thaumcraft:log_greatwood"
+local skipCorners = args[2] == "true"
 mineVeinBestFirstSearch(ore)
