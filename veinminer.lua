@@ -1,3 +1,4 @@
+-- Veinminer implementation using best-first search. This is more efficient than a breadth-first search
 local veinBlock = nil
 local toMineStack = {}
 local basePosition = vector.new(0, 0, 0)
