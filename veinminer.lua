@@ -43,7 +43,7 @@ local function tryAdd(p)
     if seen[key] then return end
     seen[key] = true
     table.insert(toMineStack, p)
-    print("Found block at " .. tostring(p))
+    print("Found block at " .. tostring(p) .. " Fuel level: " .. turtle.getFuelLevel()) 
 end
 
 local function checkSurroundings()
@@ -127,8 +127,8 @@ end
 
 local function refueler(num)
     for i = 1, 16 do
-        local item = turtle.getItemDetail(i)
-        if item and item.tags["minecraft:fuel"] then
+        local item = turtle.getItemDetail(i, true)
+        if item and item.tags and item.tags["minecraft:fuel"] then
             turtle.select(i)
             turtle.refuel(num)
             return true
@@ -139,6 +139,7 @@ end
 
 local function mineVeinBestFirstSearch(block)
     veinBlock = block
+    refueler(1) -- ensure we have fuel to start with
     checkSurroundings()
     sortStack()
 
