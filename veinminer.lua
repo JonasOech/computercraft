@@ -115,10 +115,26 @@ local function distSq(a, b)
     return dx * dx + dy * dy + dz * dz
 end
 
+local function manhattandist(a, b)
+    return math.abs(a.x - b.x) + math.abs(a.y - b.y) + math.abs(a.z - b.z)
+end
+
 local function sortStack()
     table.sort(toMineStack, function(a, b)
         return distSq(a, basePosition) < distSq(b, basePosition)
     end)
+end
+
+local function refueler(num)
+    for i = 1, 16 do
+        local item = turtle.getItemDetail(i)
+        if item and item.tags["minecraft:fuel"] then
+            turtle.select(i)
+            turtle.refuel(num)
+            return true
+        end
+    end
+    return false
 end
 
 local function mineVeinBestFirstSearch(block)
@@ -131,10 +147,21 @@ local function mineVeinBestFirstSearch(block)
         moveTo(nextBlock)
         checkSurroundings()
         sortStack()
+
+        -- Refuel if we're getting low. We add a small buffer to avoid running out mid-vein.
+        if turtle.getFuelLevel() <= manhattandist(nextBlock, basePosition) + 5 then
+            if not refueler(4) then
+                -- look for comsu
+                print("Out of fuel! Stopping veinminer.")
+                break
+            end
+        end
     end
 
     moveTo(basePosition)
     turnTo(0)
 end
 
-mineVeinBestFirstSearch("minecraft:coal_ore")
+local args = {...}
+local ore = args[1] or "minecraft:coal_ore"
+mineVeinBestFirstSearch(ore)
