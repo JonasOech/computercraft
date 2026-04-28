@@ -1,61 +1,139 @@
-
 local veinBlock = nil
-local toMineStack = { } -- blocks weve seen but not mined yet
+local toMineStack = {}
 local basePosition = vector.new(0, 0, 0)
 local position = vector.new(0, 0, 0)
+local heading = 0
 
+-- DIRS is internally consistent with turnRight incrementing heading.
+-- The turtle's true world facing is irrelevant; positions are tracked relative to start.
+local DIRS = {
+    [0] = vector.new(0, 0, 1),
+    [1] = vector.new(1, 0, 0),
+    [2] = vector.new(0, 0, -1),
+    [3] = vector.new(-1, 0, 0),
+}
+
+local seen = {}
+
+local function posKey(p)
+    return p.x .. "," .. p.y .. "," .. p.z
+end
+
+local function turnRight()
+    turtle.turnRight()
+    heading = (heading + 1) % 4
+end
+
+local function turnLeft()
+    turtle.turnLeft()
+    heading = (heading - 1) % 4
+end
+
+local function turnTo(target)
+    target = target % 4
+    while heading ~= target do
+        local diff = (target - heading) % 4
+        if diff == 3 then turnLeft() else turnRight() end
+    end
+end
+
+local function tryAdd(p)
+    local key = posKey(p)
+    if seen[key] then return end
+    seen[key] = true
+    table.insert(toMineStack, p)
+    print("Found block at " .. tostring(p))
+end
 
 local function checkSurroundings()
-    local hasblock, data
-    for i = 0, 3 do --check in all 4 directions
-        hasblock, data= turtle.inspect(i)
+    for _ = 0, 3 do
+        local hasblock, data = turtle.inspect()
         if hasblock and data.name == veinBlock then
-            table.insert(toMineStack, position + vector.new(0, 0, 1):rotate(i * math.pi / 2))
-            print("Found block at " .. tostring(position + vector.new(0, 0, 1):rotate(i * math.pi / 2)))
+            tryAdd(position + DIRS[heading])
         end
-        turtle.turnRight()
+        turnRight()
     end
 
-    -- check up and down
-    hasblock, data = turtle.inspectUp()
+    local hasblock, data = turtle.inspectUp()
     if hasblock and data.name == veinBlock then
-        table.insert(toMineStack, position + vector.new(0, 1, 0))
-        print("Found block at " .. tostring(position + vector.new(0, 1, 0)))
+        tryAdd(position + vector.new(0, 1, 0))
     end
     hasblock, data = turtle.inspectDown()
     if hasblock and data.name == veinBlock then
-        table.insert(toMineStack, position + vector.new(0, -1, 0))
-        print("Found block at " .. tostring(position + vector.new(0, -1, 0)))
+        tryAdd(position + vector.new(0, -1, 0))
     end
 end
 
-local function mineVeinBestFirstSearch(veinBlock)
-    veinBlock = veinBlock
-    checkSurroundings() --push all blocks around us to the stack
-    --sort the stack by manhattan distance to the base position
-    table.sort(toMineStack, function(a, b) return (a - basePosition).length() < (b - basePosition).length() end) 
+local function moveForward()
+    while not turtle.forward() do
+        if not turtle.dig() then return false end
+    end
+    position = position + DIRS[heading]
+    return true
+end
+
+local function moveUp()
+    while not turtle.up() do
+        if not turtle.digUp() then return false end
+    end
+    position = position + vector.new(0, 1, 0)
+    return true
+end
+
+local function moveDown()
+    while not turtle.down() do
+        if not turtle.digDown() then return false end
+    end
+    position = position + vector.new(0, -1, 0)
+    return true
+end
+
+local function moveTo(target)
+    while target.y > position.y do moveUp() end
+    while target.y < position.y do moveDown() end
+
+    if target.x > position.x then
+        turnTo(1)
+        while position.x < target.x do moveForward() end
+    elseif target.x < position.x then
+        turnTo(3)
+        while position.x > target.x do moveForward() end
+    end
+
+    if target.z > position.z then
+        turnTo(0)
+        while position.z < target.z do moveForward() end
+    elseif target.z < position.z then
+        turnTo(2)
+        while position.z > target.z do moveForward() end
+    end
+end
+
+local function distSq(a, b)
+    local dx, dy, dz = a.x - b.x, a.y - b.y, a.z - b.z
+    return dx * dx + dy * dy + dz * dz
+end
+
+local function sortStack()
+    table.sort(toMineStack, function(a, b)
+        return distSq(a, basePosition) < distSq(b, basePosition)
+    end)
+end
+
+local function mineVeinBestFirstSearch(block)
+    veinBlock = block
+    checkSurroundings()
+    sortStack()
 
     while #toMineStack > 0 do
-        local nextBlock = table.remove(toMineStack, 1) --get the closest block
-        --move to the block
-        local moveVector = nextBlock - position
-        if moveVector.y > 0 then turtle.up() position.y = position.y + 1 end
-        if moveVector.y < 0 then turtle.down() position.y = position.y - 1 end
-        if moveVector.x > 0 then turtle.forward() position.x = position.x + 1 end
-        if moveVector.x < 0 then turtle.back() position.x = position.x - 1 end
-        if moveVector.z > 0 then turtle.forward() position.z = position.z + 1 end
-        if moveVector.z < 0 then turtle.back() position.z = position.z - 1 end
-
-        --mine the block
-        turtle.dig()
-
-        --check surroundings of the new block and add them to the stack
+        local nextBlock = table.remove(toMineStack, 1)
+        moveTo(nextBlock)
         checkSurroundings()
-
-        --sort the stack again by distance to the base
-        table.sort(toMineStack, function(a, b) return (a - basePosition).length() < (b - basePosition).length() end) 
+        sortStack()
     end
-    
+
+    moveTo(basePosition)
+    turnTo(0)
 end
 
-mineVeinBestFirstSearch("minecraft:coal_ore") --example usage, replace with desired block name
+mineVeinBestFirstSearch("minecraft:coal_ore")
