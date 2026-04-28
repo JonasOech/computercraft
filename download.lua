@@ -1,9 +1,13 @@
 -- Computercraft update script
 
+local args = {...}
+local fileName = args[1] or "init.lua"
+
 if not fs.exists("/cache") then fs.makeDir("/cache") end
 
--- File to store the last known commit SHA
-local hashFile = "/cache/commit.sha"
+-- File to store the last known commit SHA (per downloaded file)
+local hashFile = "/cache/" .. fileName .. ".sha"
+local cachePath = "/cache/" .. fileName
 
 local function readCurrentSha()
     local file = fs.open(hashFile, "r")
@@ -20,9 +24,8 @@ local function saveCurrentSha(sha)
 end
 
 local currentSha = readCurrentSha()
-local LINK = "https://raw.githubusercontent.com/JonasOech/computercraft/refs/heads/main/init.lua"
 local API_LINK = "https://api.github.com/repos/JonasOech/computercraft/commits/main"
-local filepath =  "/disk/init.lua"
+local filepath = "/disk/" .. fileName
 
 while true do
     -- Fetch the latest commit info from GitHub API
@@ -39,15 +42,15 @@ while true do
                 print("New commit detected: " .. latestSha:sub(1, 7))
                 print("Running update...")
                 
-                if fs.exists("/cache/init.lua") then fs.delete("/cache/init.lua") end
-                
+                if fs.exists(cachePath) then fs.delete(cachePath) end
+
                 -- Download using the exact commit SHA to bypass branch caching
-                local exactUrl = "https://raw.githubusercontent.com/JonasOech/computercraft/" .. latestSha .. "/init.lua"
-                shell.execute("wget", exactUrl, "/cache/init.lua")
-                
-                if fs.exists("/cache/init.lua") then
+                local exactUrl = "https://raw.githubusercontent.com/JonasOech/computercraft/" .. latestSha .. "/" .. fileName
+                shell.execute("wget", exactUrl, cachePath)
+
+                if fs.exists(cachePath) then
                     if fs.exists(filepath) then fs.delete(filepath) end
-                    fs.move("/cache/init.lua", filepath)
+                    fs.move(cachePath, filepath)
                     
                     saveCurrentSha(latestSha)
                     currentSha = latestSha
