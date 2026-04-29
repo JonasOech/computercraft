@@ -1,4 +1,4 @@
--- Veinminer implementation using best-first search. This is more efficient than a breadth-first search
+-- Veinminer implementation using depth-first search.
 local veinBlock = nil
 local toMineStack = {}
 local basePosition = vector.new(0, 0, 0)
@@ -64,7 +64,7 @@ local function tryAdd(p)
     if seen[key] then return end
     seen[key] = true
     table.insert(toMineStack, p)
-    print("Found block at " .. tostring(p) ..)
+    print("Found block at " .. tostring(p))
     -- Probe diagonals: turtle.inspect can't see them, so we dig through to a vantage and rescan.
     for _, d in ipairs(DIAGONALS) do
         queueProbe(p + d)
@@ -165,33 +165,17 @@ local function moveTo(target)
 
 end
 
-local function distSq(a, b)
-    local dx, dy, dz = a.x - b.x, a.y - b.y, a.z - b.z
-    return dx * dx + dy * dy + dz * dz
-end
-
-
-local function sortStack()
-    table.sort(toMineStack, function(a, b)
-        return distSq(a, basePosition) < distSq(b, basePosition)
-    end)
-end
-
-
-local function mineVeinBestFirstSearch(block)
+local function mineVeinDepthFirstSearch(block)
     veinBlock = block
     refueler(1) -- ensure we have fuel to start with
     checkSurroundings()
-    sortStack()
 
     while #toMineStack > 0 do
-        local nextBlock = table.remove(toMineStack, 1)
+        local nextBlock = table.remove(toMineStack)
         if not moveTo(nextBlock) then
             break
         end
         checkSurroundings()
-        sortStack()
-
     end
 
     moveTo(basePosition)
@@ -205,4 +189,4 @@ if #args ~= 2 then
 end
 local ore = args[1] or "thaumcraft:log_greatwood"
 local skipCorners = args[2] == "true"
-mineVeinBestFirstSearch(ore)
+mineVeinDepthFirstSearch(ore)
