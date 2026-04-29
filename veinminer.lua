@@ -29,6 +29,7 @@ for dx = -1, 1 do
 end
 
 local seen = {}
+local checked = {}
 
 local function posKey(p)
     return p.x .. "," .. p.y .. "," .. p.z
@@ -66,12 +67,17 @@ local function tryAdd(p)
     table.insert(toMineStack, p)
     print("Found block at " .. tostring(p))
     -- Probe diagonals: turtle.inspect can't see them, so we dig through to a vantage and rescan.
+    -- Skip targets we've already inspected from — surroundings there are already known.
     for _, d in ipairs(DIAGONALS) do
-        queueProbe(p + d)
+        local target = p + d
+        if not checked[posKey(target)] then
+            queueProbe(target)
+        end
     end
 end
 
 local function checkSurroundings()
+    checked[posKey(position)] = true
     for _ = 0, 3 do
         local hasblock, data = turtle.inspect()
         if hasblock and data.name == veinBlock then
@@ -164,6 +170,7 @@ local function moveTo(target)
     return true
 
 end
+
 
 local function mineVeinDepthFirstSearch(block)
     veinBlock = block
